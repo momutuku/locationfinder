@@ -39,7 +39,17 @@ public class LocationService {
 
     @PostConstruct
     public void init() throws IOException {
-        loadGeojsonFiles();
+        // loadGeojsonFiles();
+        try {
+            loadGeojsonFiles();
+        } catch (IOException e) {
+            // Nice little catch all that just loggs the error but not c the application
+            // startup
+            System.err.println("Warning: Failed to load some GeoJSON files: " + e.getMessage());
+            countries.clear();
+            countryBounds.clear();
+        }
+
     }
 
     private void loadGeojsonFiles() throws IOException {
@@ -191,18 +201,39 @@ public class LocationService {
     public Map<String, Map<String, Integer>> getAvailableCountries() {
         return countries.entrySet().stream()
                 .collect(Collectors.toMap(
-                        Map.Entry::getKey,
+                        entry -> extractCountryName(entry.getValue()),
                         entry -> getAdminLevels(entry.getValue())));
+    }
+
+    private String extractCountryName(List<AdminRegion> regions) {
+        if (regions.isEmpty())
+            return "Unknown";
+        return regions.get(0).getProperties().getOrDefault("country", "Unknown").toString();
     }
 
     private Map<String, Integer> getAdminLevels(List<AdminRegion> regions) {
         if (regions.isEmpty())
             return Collections.emptyMap();
 
-        return regions.get(0).getProperties().keySet().stream()
-                .filter(key -> key.startsWith("level_"))
-                .collect(Collectors.toMap(
-                        key -> key,
-                        key -> Integer.parseInt(key.split("_")[1])));
+        Map<String, Integer> levelNames = new HashMap<>();
+        Map<String, String> properties = regions.get(0).getProperties();
+
+        for (String key : properties.keySet()) {
+            if (key.startsWith("level_")) {
+                int levelNumber = Integer.parseInt(key.split("_")[1]);
+                levelNames.put(key, levelNumber);
+            }
+        }
+
+        return levelNames;
     }
+
+    // Will use this again later maybe
+    private String getLevelNameFromProperties(Map<String, String> properties, int level) {
+        String typeKey = "TYPE_" + level;
+
+        Object levelName = properties.get(typeKey);
+        return levelName != null ? levelName.toString() : "Unknown Level";
+    }
+
 }
