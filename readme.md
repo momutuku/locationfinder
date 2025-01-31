@@ -129,7 +129,11 @@ cz check
  ### 4.4 Making changes to the hooks
  `pre-commit uninstall && pre-commit install --install-hooks`
 ---
-
+## ⚠️ Important: First-Time Setup
+After cloning the repository, run:
+```sh
+pre-commit install --install-hooks
+pre-commit install --hook-type commit-msg
 ## ✅ Step 5: Testing the Setup
 To ensure everything works:
 1. Modify a file and attempt to commit.
