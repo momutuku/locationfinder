@@ -130,13 +130,13 @@
 				<version>3.5.0</version>
 				<configuration>
 					<gitConfig>
-						<core.hooksPath>hooks-directory/</core.hooksPath>
+						<core.hooksPath>.git/hooks</core.hooksPath>
 						<custom.configuration>true</custom.configuration>
 					</gitConfig>
 
 					<installHooks>
-						<pre-commit>file_path/to/your/hook.sh</pre-commit>
-						<commit-msg>class_path/package/hook.sh</commit-msg>
+						<pre-commit>.git/hooks/pre-commit.sample</pre-commit>
+						<commit-msg>.git/hooks/commit.sample</commit-msg>
 					</installHooks>
 				</configuration>
 				<executions>
