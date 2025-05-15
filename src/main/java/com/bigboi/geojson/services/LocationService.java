@@ -184,6 +184,7 @@ public class LocationService {
                         if (region.getGeometry().contains(point)) {
                             Map<String, Object> result = new HashMap<>();
                             result.put("country", countryCode);
+                            result.put("levelsCount", region.getProperties().size());
                             result.put("properties", region.getProperties());
                             // result.put("original_properties", region.getOriginalProperties());
                             return Optional.of(result);

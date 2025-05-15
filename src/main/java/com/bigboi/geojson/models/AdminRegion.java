@@ -1,6 +1,7 @@
 package com.bigboi.geojson.models;
 
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.locationtech.jts.geom.MultiPolygon;
 
@@ -20,7 +21,7 @@ public class AdminRegion {
     }
 
     public Map<String, String> getProperties() {
-        return properties;
+        return new TreeMap<>(properties);
     }
 
     public Map<String, Object> getOriginalProperties() {
