@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +31,8 @@ import jakarta.annotation.PostConstruct;
 public class LocationService {
     private final Map<String, List<AdminRegion>> countries = new HashMap<>();
     private final Map<String, CountryBounds> countryBounds = new HashMap<>();
+    private final Map<String, Map<Integer, String>> countryAdminLevelNames = new HashMap<>();
+
     private final GeometryFactory geometryFactory;
     private final ObjectMapper objectMapper;
 
@@ -95,6 +99,18 @@ public class LocationService {
 
             Map<String, String> adminLevels = extractAdminLevels(properties);
             Map<String, Object> originalProps = objectMapper.convertValue(properties, Map.class);
+
+            String country = properties.get("COUNTRY").asText();
+            countryAdminLevelNames.putIfAbsent(country, new HashMap<>());
+            for (int level = 1; level <= 5; level++) {
+                String engTypeKey = "ENGTYPE_" + level;
+                if (properties.has(engTypeKey)) {
+                    String typeName = properties.get(engTypeKey).asText();
+                    if (!"NA".equals(typeName)) {
+                        countryAdminLevelNames.get(country).put(level, typeName);
+                    }
+                }
+            }
 
             regions.add(new AdminRegion(multiPolygon, adminLevels, originalProps));
         } catch (Exception e) {
@@ -171,7 +187,6 @@ public class LocationService {
     }
 
     public Optional<Map<String, Object>> findLocation(double lat, double lon) {
-
         Point point = geometryFactory.createPoint(new org.locationtech.jts.geom.Coordinate(lon, lat));
 
         for (Map.Entry<String, List<AdminRegion>> entry : countries.entrySet()) {
@@ -183,10 +198,36 @@ public class LocationService {
                     try {
                         if (region.getGeometry().contains(point)) {
                             Map<String, Object> result = new HashMap<>();
+                            Map<String, Object> renamedLevels = new LinkedHashMap<>();
+
+                            Map<String, Object> originalProps = region.getOriginalProperties();
+                            Map<String, String> adminLevels = region.getProperties();
+
+                            renamedLevels.put("0_country", adminLevels.get("country"));
+
+                            int levelsCount = 1;
+
+                            for (String key : originalProps.keySet()) {
+                                if (key.startsWith("NAME_") && !key.equals("NAME_0")) {
+                                    String levelStr = key.substring(5);
+                                    int level = Integer.parseInt(levelStr);
+
+                                    String levelName = String.valueOf(level) + "_" + countryAdminLevelNames
+                                            .getOrDefault(adminLevels.get("country"), Collections.emptyMap())
+                                            .getOrDefault(level, "level_" + level)
+                                            .toLowerCase()
+                                            .replace(" ", "_");
+
+                                    String levelValue = originalProps.get(key).toString();
+                                    renamedLevels.put(levelName, levelValue);
+                                    levelsCount++;
+                                }
+                            }
+
                             result.put("country", countryCode);
-                            result.put("levelsCount", region.getProperties().size());
-                            result.put("properties", region.getProperties());
-                            // result.put("original_properties", region.getOriginalProperties());
+                            result.put("levelsCount", levelsCount);
+                            result.put("properties", renamedLevels);
+
                             return Optional.of(result);
                         }
                     } catch (Exception e) {
