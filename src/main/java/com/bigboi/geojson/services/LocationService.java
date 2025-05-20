@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,11 +44,13 @@ public class LocationService {
     public void init() throws IOException {
         // loadGeojsonFiles();
         try {
+            System.out.println("Loading GeoJSON files...");
             loadGeojsonFiles();
         } catch (IOException e) {
             // Nice little catch all that just loggs the error but not c the application
             // startup
             System.err.println("Warning: Failed to load some GeoJSON files: " + e.getMessage());
+            e.printStackTrace();
             countries.clear();
             countryBounds.clear();
         }
@@ -57,9 +58,14 @@ public class LocationService {
     }
 
     private void loadGeojsonFiles() throws IOException {
-        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-        Resource[] resources = resolver.getResources("classpath:data/*.json");
+        // PathMatchingResourcePatternResolver resolver = new
+        // PathMatchingResourcePatternResolver();
+        // Resource[] resources = resolver.getResources("classpath:data/*.json");
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(cl);
+        Resource[] resources = resolver.getResources("classpath*:data/*.json");
 
+        System.out.println("Found JSON files: " + resources.length);
         for (Resource resource : resources) {
             String filename = resource.getFilename();
             if (filename == null)
